@@ -1,85 +1,52 @@
 #include "kernel/types.h"
-#include "kernel/stat.h"
 #include "user/user.h"
-
-char *readline()
-{
-    char *buf = malloc(100);
-    char *p = buf;
-    while (read(0, p, 1) != 0)
-    {
-        if (*p == '\n' || *p == '\0')
-        {
-            *p = '\0';
-            return buf;
-        }
-        p++;
-    }
-    if (p != buf)
-        return buf;
-    free(buf);
-    return 0;
-}
-
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-    {
-        printf("Usage: xargs [command]\n");
-        exit(-1);
-    }
-    char *l;
-    argv++;
-    char *nargv[16];
-    char **pna = nargv;
-    char **pa = argv;
-    while (*pa != 0)
-    {
-        *pna = *pa;
-        pna++;
-        pa++;
-    }
-    while ((l = readline()) != 0)
-    {
-        //printf("%s\n", l);
-        char *p = l;
-        char *buf = malloc(36);
-        char *bh = buf;
-        int nargc = argc - 1;
-        while (*p != 0)
-        {
-            if (*p == ' ' && buf != bh)
-            {
-                *bh = 0;
-                nargv[nargc] = buf;
-                buf = malloc(36);
-                bh = buf;
-                nargc++;
-            }
-            else
-            {
-                *bh = *p;
-                bh++;
-            }
-            p++;
-        }
-        if (buf != bh)
-        {
-            nargv[nargc] = buf;
-            nargc++;
-        }
-        nargv[nargc] = 0;
-        free(l);
-        int pid = fork();
-        if (pid == 0)
-        {
-            // printf("%s %s\n", nargv[0], nargv[1]);
-            exec(nargv[0], nargv);
-        }
-        else
-        {
-            wait(0);
-        }
-    }
-    exit(0);
+#include "kernel/param.h"
+#define MAX_LEN 100
+   
+int main(int argc, char *argv[]) {
+	char *command = argv[1];
+	char bf;
+	char paramv[MAXARG][MAX_LEN]; // arguments
+	char *m[MAXARG];
+   
+	while (1) {
+		int count = argc-1;  // # of current arguments
+		memset(paramv, 0, MAXARG * MAX_LEN);
+		// copy the parameter of command
+		for (int i=1; i<argc; i++) {
+			strcpy(paramv[i-1], argv[i]);
+		}
+   
+		int cursor = 0; // cursor pointing the char position in single_arg
+		int flag = 0; // flag indicating whether thers is argument preceding space
+		int read_result;
+   
+		while (((read_result = read(0, &bf, 1))) > 0 && bf != '\n') {
+			if (bf == ' ' && flag == 1) {
+				count++;
+				// reset flag and p
+				cursor = 0;
+				flag = 0;
+			}
+			else if (bf != ' ') {
+				paramv[count][cursor++] = bf;
+				flag = 1;
+			}
+		}
+		// encounters EOF of input or \n
+		if (read_result <= 0) {
+			break;
+		}
+		for (int i=0; i<MAXARG-1; i++) {
+			m[i] = paramv[i];
+		}
+		m[MAXARG-1] = 0;
+		if (fork() == 0) {
+			exec(command, m);
+			exit(0);
+		} else {
+			wait((int *) 0);
+		}
+	}
+	exit(0);
 }

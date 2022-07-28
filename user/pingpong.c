@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    //首先使用一个大小为2的二维数组创建一个管道
+    //首先使用一个大小为2的一维数组创建一个管道
     int parent_pipefd[2];//用于父进程发送消息
     int child_pipefd[2];//用于子进程发送消息
     pipe(parent_pipefd);//创建管道
