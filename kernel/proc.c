@@ -55,6 +55,17 @@ procinit(void)
       p->kstack = KSTACK((int) (p - proc));
   }
 }
+int
+nproc_active()
+{
+  int i;
+  int num = 0;
+  for (i=0; i<NPROC; i++) {
+    if (proc[i].state != UNUSED)
+      num++;
+  }
+  return num;
+}
 
 // Must be called with interrupts disabled,
 // to prevent race with process being moved
@@ -315,6 +326,7 @@ fork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
+  np->syscallnum = p->syscallnum;
   return pid;
 }
 
