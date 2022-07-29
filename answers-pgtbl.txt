@@ -1,0 +1,12 @@
+Which other xv6 system call(s) could be made faster using this shared page? Explain how.
+Answer:fork
+
+Explain the output of vmprint in terms of Fig 3-4 from the text. What does page 0 contain? What is in page 2? When running in user mode, could the process read/write the memory mapped by page 1? What does the third to last page contain?
+Answer:
+According to the exec() function and the xv6 manual, you can see that the following code will allocate memory for the segment of the ELF file and load it, so it is speculated that the content is stored by page 0.
+page0 should mainly be the code segment and data segment of the application; and page2 corresponds to the user stack; page1 in the middle should be the guard page, no physical address actual mapping, for overflow detection.
+
+
+
+
+
