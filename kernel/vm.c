@@ -97,38 +97,41 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   return &pagetable[PX(0, va)];
 }
 
-// print the page table
-void
-vmprint(pagetable_t pagetable)
+void vmprint(pagetable_t pagetable,int count)//count应该为0
 {
-  printf("page table %p\n", pagetable);
-  int level = 0;
-  _helper_vmprint(pagetable, level);
-}
-
-void
-_helper_vmprint(pagetable_t pagetable, int level)
-{
-  for (int i=0; i<512; i++) {
-    pte_t pte = pagetable[i];
-    if ((pte & PTE_V) && (pte & (PTE_R | PTE_W | PTE_X)) == 0) {
-      // this pte points to a valid lower level page table
-      uint64 child = PTE2PA(pte);
-      for (int j=0; j <= level; j++) {
-        printf("..");
-	if ((j+1) <= level) {
-	  printf(" ");
-	}
-      }
-      printf("%d: pte %p pa %p\n", i, pte, child);
-      _helper_vmprint((pagetable_t)child, level+1);
-    }
-    else if (pte & PTE_V) {
-      uint64 child = PTE2PA(pte);
-      // the lowest valid page table
-      printf(".. .. ..%d: pte %p pa %p\n", i, pte, child);
-    }
+  // there are 2^9 = 512 PTEs in a page table.
+  if(count==0)
+  {
+    printf("page table %p\n",pagetable);
   }
+  int arg_tmp=count+1;
+  if(count!=3)
+  {
+    for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if(pte & PTE_V)
+    {
+      uint64 child = PTE2PA(pte);
+      if(count==0)
+      {
+        printf("..");
+      }
+      else if(count==1)
+      {
+        printf(".. ..");
+      }
+      else if(count==2)
+      {
+        printf(".. .. ..");
+      }
+      printf("%d: pte %p pa %p\n",i,pte,child);
+      vmprint((pagetable_t)child,arg_tmp);
+    }
+    else
+      continue; 
+  }
+  }
+  return;
 }
 
 // Look up a virtual address, return the physical address,
@@ -476,7 +479,7 @@ int vm_pgaccess(pagetable_t pagetable,uint64 va){
   if(pte == 0)
     return 0;
   if((*pte & PTE_A) != 0){
-    *pte=*pte&(~PTE_A);
+    *pte=*pte&(~PTE_A); //将PTE_A复位
     return 1;
   }
   return 0;
