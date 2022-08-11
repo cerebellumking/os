@@ -67,11 +67,14 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+    //判断缺页中断
      } else if (r_scause() == 13 || r_scause() == 15) {
+      //判断是否为cow引起的缺页中断
       uint64 va = r_stval();
 
       if (va >= MAXVA || (va <= PGROUNDDOWN(p->trapframe->sp) && va >= PGROUNDDOWN(p->trapframe->sp) - PGSIZE)) {
         p->killed = 1;
+        //分配物理页，并重新映射到这个页表相应的虚拟地址上
       } else if (cow_alloc(p->pagetable, va) != 0) {
         p->killed = 1;
       }
@@ -225,16 +228,17 @@ devintr()
   }
 }
 
+//分配物理页，并重新映射到这个页表相应的虚拟地址上
 int cow_alloc(pagetable_t pagetable, uint64 va) {
   uint64 pa;
   pte_t *pte;
   uint flags;
 
- if (va >= MAXVA) return -1; 
+ if (va >= MAXVA) return -1; //非法地址
   va = PGROUNDDOWN(va);
   pte = walk(pagetable, va, 0);
   if (pte == 0) return -1;
-  if ((*pte & PTE_V) == 0) return -1;
+  if ((*pte & PTE_V) == 0) return -1;//无效页
   pa = PTE2PA(*pte);
   if (pa == 0) return -1;
   flags = PTE_FLAGS(*pte);
@@ -245,7 +249,7 @@ int cow_alloc(pagetable_t pagetable, uint64 va) {
     memmove(mem, (char*)pa, PGSIZE);
     flags = (flags & ~PTE_COW) | PTE_W;
     *pte = PA2PTE((uint64)mem) | flags;
-    kfree((void*)pa);
+    kfree((void*)pa);//kfree旧的物理页，保证当没有任何进程的页表引用这个物理页的情况下这个物理页被释放掉。
     return 0;
   }
   return 0;

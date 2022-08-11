@@ -312,7 +312,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: page not present");
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
-    
+  //将父进程的物理页映射到子进程，而不是分配新页。在子进程和父进程的PTE中清除PTE_W标志。
    if (flags & PTE_W) {
       flags = (flags | PTE_COW) & (~PTE_W);
       *pte = PA2PTE(pa) | flags;
@@ -356,7 +356,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-
+    //将内容复制到用户进程的虚拟地址时，会将原来的内容覆盖掉
     if (cow_alloc(pagetable, va0) != 0) {
       return -1;
     }

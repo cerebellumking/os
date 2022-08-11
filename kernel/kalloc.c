@@ -26,7 +26,7 @@ struct {
 
 struct {
   struct spinlock lock;
-  int count[PGROUNDUP(PHYSTOP) / PGSIZE];
+  int count[PGROUNDUP(PHYSTOP) / PGSIZE];//存放每个物理页的引用数
 } refc;
 
 void
@@ -65,7 +65,9 @@ getrefc(void *pa)
 void
 kinit()
 {
+  //引用结构初始化
   refcinit();
+
   initlock(&kmem.lock, "kmem");
   freerange(end, (void*)PHYSTOP);
   char *p;
